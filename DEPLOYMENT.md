@@ -47,8 +47,8 @@ VITE_POLARIS_API_ORIGIN=https://your-backend.example.com
 Leave `VITE_POLARIS_API_ORIGIN` empty for same-origin web deployments where the
 frontend and `/api` routes are served by the same host.
 
-Do not put provider API keys in `VITE_` variables. Frontend variables are bundled
-into browser code. Provider keys belong in serverless, Worker, native secure
+Provider API keys are server-side secrets. `VITE_` variables are bundled into
+browser code, so provider keys fit serverless functions, Workers, native secure
 storage, or another deployer-owned backend.
 
 ## Local Web Development
@@ -111,10 +111,10 @@ Output directory: dist
 Add server-side environment variables for the routes you enable. Common keys are
 listed in [docs/connect-your-own-backend.md](docs/connect-your-own-backend.md).
 
-Some frontend paths refer to API capabilities that require additional handler
-work before they can be advertised as complete. Check the route table in
-[docs/connect-your-own-backend.md](docs/connect-your-own-backend.md) before
-publishing a managed public service.
+Some frontend paths refer to API capabilities that need additional handler work
+before they are complete in a managed public service. The route table in
+[docs/connect-your-own-backend.md](docs/connect-your-own-backend.md) marks those
+surfaces.
 
 ## Split Frontend And Backend
 
@@ -125,21 +125,22 @@ another:
 VITE_POLARIS_API_ORIGIN=https://api.example.com npm run build
 ```
 
-The backend must allow the deployed frontend origin in CORS. Do not use `*` for
-routes that forward provider credentials, receive diagnostics, or handle user
-content.
+The backend needs to allow the deployed frontend origin in CORS. For routes that
+forward provider credentials, receive diagnostics, or handle user content, keep
+CORS scoped to known frontend origins rather than wildcard origins.
 
 Backend origin and relay rules are documented in
 [docs/connect-your-own-backend.md](docs/connect-your-own-backend.md).
 
-## Backend Trust Boundary
+## Backend Visibility
 
 A backend can see the traffic it handles. If it forwards provider requests,
 search requests, diagnostics, image generation, embeddings, or other model
 inputs, the backend operator may be able to inspect that content.
 
-Use a backend you operate or trust. Do not point a private Polaris install at an
-unknown public backend just because it is reachable.
+A private Polaris install is safest with a backend the deployer operates or
+already trusts. A reachable public backend is still a backend operated by
+someone else.
 
 Connecting a backend does not automatically enable account sync, shared cloud
 storage, or remote backups. Those are separate product features and need their
@@ -204,13 +205,13 @@ For a release build:
 npm run android:build-release
 ```
 
-Public distribution requires a package identity, versioning, and signing setup
-owned by the distributor. If you distribute a fork, change the Android
-`applicationId`, Capacitor `appId`, app name, and versioning before publishing so
-the fork does not collide with another release channel.
+Public distribution uses a package identity, versioning, and signing setup owned
+by the distributor. Fork distributors normally use their own Android
+`applicationId`, Capacitor `appId`, app name, and versioning so their releases do
+not collide with another channel.
 
-Native builds that need internal `/api` routes should be built with
-`VITE_POLARIS_API_ORIGIN` pointing at a deployer-owned backend.
+For native builds that need internal `/api` routes, set
+`VITE_POLARIS_API_ORIGIN` to a deployer-owned backend during the build.
 
 ## iOS Build
 
@@ -237,8 +238,8 @@ TestFlight or App Store distribution requires an Apple Developer account,
 signing identities, provisioning profiles, and capability review for the
 distributor's own bundle identifier.
 
-Native builds that need internal `/api` routes should be built with
-`VITE_POLARIS_API_ORIGIN` pointing at a deployer-owned backend.
+For native builds that need internal `/api` routes, set
+`VITE_POLARIS_API_ORIGIN` to a deployer-owned backend during the build.
 
 ## Verification
 
@@ -288,8 +289,8 @@ Polaris is local-first. Browser data, Android data, iOS data, imported backups,
 and exported archives remain user-controlled local data unless a user explicitly
 exports, imports, or connects a backend.
 
-A self-hosted backend is not a trusted data vault by default. Treat backend
-operators as able to access the requests routed through that backend.
+A self-hosted backend is not automatically a private data vault. The operator of
+that backend can access the requests routed through it.
 
-Never ask users to post private backups, full databases, API keys, or chat
-exports in public issues.
+Public issues are safest with symptoms, versions, devices, and reproduction
+steps instead of private backups, full databases, API keys, or chat exports.
