@@ -87,6 +87,11 @@ The static frontend keeps user data in the browser runtime. Deploying a new
 frontend build does not automatically migrate a user's existing browser,
 Android, or iOS data.
 
+Static hosting by itself does not create accounts, cloud sync, or a central
+database. It only serves the app shell. User data remains in the user's current
+browser or native app storage unless the user explicitly exports, imports, or
+connects a separate backend feature.
+
 ## Same-Origin API Deployment
 
 The `api/` directory contains Vercel-style serverless handlers. A same-origin
@@ -126,6 +131,20 @@ content.
 
 Backend origin and relay rules are documented in
 [docs/connect-your-own-backend.md](docs/connect-your-own-backend.md).
+
+## Backend Trust Boundary
+
+A backend can see the traffic it handles. If it forwards provider requests,
+search requests, diagnostics, image generation, embeddings, or other model
+inputs, the backend operator may be able to inspect that content.
+
+Use a backend you operate or trust. Do not point a private Polaris install at an
+unknown public backend just because it is reachable.
+
+Connecting a backend does not automatically enable account sync, shared cloud
+storage, or remote backups. Those are separate product features and need their
+own data model, authentication, authorization, storage, migration, and deletion
+rules.
 
 ## Cloudflare Worker Example
 
@@ -268,6 +287,9 @@ shell is not a backend server.
 Polaris is local-first. Browser data, Android data, iOS data, imported backups,
 and exported archives remain user-controlled local data unless a user explicitly
 exports, imports, or connects a backend.
+
+A self-hosted backend is not a trusted data vault by default. Treat backend
+operators as able to access the requests routed through that backend.
 
 Never ask users to post private backups, full databases, API keys, or chat
 exports in public issues.
