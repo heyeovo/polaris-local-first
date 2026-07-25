@@ -23,6 +23,8 @@ export const app = {
   'app.world.retry': '重新打开',
   'app.persistence.title': '本地数据暂时不可读',
   'app.persistence.body': '为了保护已保存的数据，Polaris 暂停了自动写回。未完成读取：{stores}。',
+  'app.persistence.writeTitle': '本地数据保存失败',
+  'app.persistence.writeBody': '刚才的改动没有写入本地存储，刷新后可能丢失。失败位置：{operation}。',
   'app.persistence.errorDetails': '详情：{message}',
   'app.persistence.retry': '重试',
   'app.persistence.openBackup': '打开备份页',

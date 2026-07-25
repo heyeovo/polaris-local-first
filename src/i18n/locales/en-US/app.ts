@@ -25,6 +25,8 @@ export const app = {
   'app.world.retry': 'Retry',
   'app.persistence.title': 'Local data is temporarily unreadable',
   'app.persistence.body': 'To protect saved data, Polaris paused automatic writeback. Reads still blocked: {stores}.',
+  'app.persistence.writeTitle': 'Failed to save local data',
+  'app.persistence.writeBody': 'Recent changes were not written to local storage and may be lost after a refresh. Failed at: {operation}.',
   'app.persistence.errorDetails': 'Details: {message}',
   'app.persistence.retry': 'Retry',
   'app.persistence.openBackup': 'Open backup',

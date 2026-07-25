@@ -42,13 +42,35 @@ describe('derivePersistenceReadFailureNotice', () => {
     });
   });
 
-  it('stays hidden for non-read persistence errors', () => {
+  it('surfaces write persistence errors even when every store is hydrated', () => {
     expect(derivePersistenceReadFailureNotice({
       ...error,
       operation: 'write'
     }, {
       startupReady: true,
-      chatHydrated: false,
+      chatHydrated: true,
+      collectionHydrated: true,
+      personaHydrated: true,
+      runtimeHydrated: true
+    })).toEqual({
+      visible: true,
+      error: {
+        ...error,
+        operation: 'write'
+      },
+      blockedStores: [],
+      reason: 'write-failure'
+    });
+  });
+
+  it('ignores failures from stores outside the core four', () => {
+    expect(derivePersistenceReadFailureNotice({
+      ...error,
+      store: 'asset',
+      operation: 'write'
+    }, {
+      startupReady: true,
+      chatHydrated: true,
       collectionHydrated: true,
       personaHydrated: true,
       runtimeHydrated: true
@@ -56,9 +78,10 @@ describe('derivePersistenceReadFailureNotice', () => {
       visible: false,
       error: {
         ...error,
+        store: 'asset',
         operation: 'write'
       },
-      blockedStores: ['对话'],
+      blockedStores: [],
       reason: null
     });
   });

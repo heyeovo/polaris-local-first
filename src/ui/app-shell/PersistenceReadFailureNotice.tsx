@@ -15,13 +15,17 @@ export function PersistenceReadFailureNotice({
   const { t } = useI18n();
   if (!notice.visible) return null;
   const blockedStores = notice.blockedStores.join(t('settings.storage.listSeparator'));
+  const isWriteFailure = notice.reason === 'write-failure';
+  const failedOperation = notice.error ? `${notice.error.store}:${notice.error.operation}` : '';
 
   return (
     <aside className="persistence-read-failure-notice" role="alert" aria-live="assertive">
       <div className="persistence-read-failure-notice__body">
-        <strong>{t('app.persistence.title')}</strong>
+        <strong>{isWriteFailure ? t('app.persistence.writeTitle') : t('app.persistence.title')}</strong>
         <p>
-          {t('app.persistence.body', { stores: blockedStores })}
+          {isWriteFailure
+            ? t('app.persistence.writeBody', { operation: failedOperation })
+            : t('app.persistence.body', { stores: blockedStores })}
         </p>
         {notice.error ? <span>{t('app.persistence.errorDetails', { message: notice.error.message })}</span> : null}
       </div>

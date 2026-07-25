@@ -13,7 +13,7 @@ export type PersistenceReadFailureNoticeState = {
   visible: boolean;
   error: PersistenceDiagnosticEntry | null;
   blockedStores: string[];
-  reason: 'read-failure' | null;
+  reason: 'read-failure' | 'write-failure' | null;
 };
 
 export type PersistenceReadFailureHydrationState = {
@@ -24,12 +24,15 @@ export type PersistenceReadFailureHydrationState = {
   runtimeHydrated: boolean;
 };
 
-function isCoreHydrationReadFailure(error: PersistenceDiagnosticEntry | null) {
+function isCoreStoreFailure(error: PersistenceDiagnosticEntry | null) {
   if (!error) return false;
-  return (
-    ['chat', 'collection', 'persona', 'runtime'].includes(error.store) &&
-    error.operation.startsWith('read')
-  );
+  return ['chat', 'collection', 'persona', 'runtime'].includes(error.store);
+}
+
+function getFailureReason(error: PersistenceDiagnosticEntry | null): 'read-failure' | 'write-failure' | null {
+  if (!error || !isCoreStoreFailure(error)) return null;
+  if (error.operation.startsWith('read')) return 'read-failure';
+  return 'write-failure';
 }
 
 export function derivePersistenceReadFailureNotice(
@@ -43,11 +46,22 @@ export function derivePersistenceReadFailureNotice(
     !hydration.runtimeHydrated ? '设置' : null
   ].filter((item): item is string => Boolean(item));
 
+  const reason = getFailureReason(error);
+
+  // 读失败：只有在确实有 store 没 hydrate 成功时才提示。
+  // 写失败：store 早就 hydrate 好了，blockedStores 必然为空，所以只看 startupReady。
+  const visible =
+    reason === 'read-failure'
+      ? Boolean(blockedStores.length > 0 && hydration.startupReady)
+      : reason === 'write-failure'
+        ? hydration.startupReady
+        : false;
+
   return {
-    visible: Boolean(blockedStores.length > 0 && hydration.startupReady && isCoreHydrationReadFailure(error)),
+    visible,
     error,
     blockedStores,
-    reason: isCoreHydrationReadFailure(error) ? 'read-failure' : null
+    reason
   };
 }
 

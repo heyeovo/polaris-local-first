@@ -34,4 +34,10 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
   if (embedSearchParams.get('embed') === 'ob') {
     document.documentElement.dataset.polarisEmbed = 'ob';
   }
+
+  if (navigator.storage && navigator.storage.persist) {
+    navigator.storage.persist().catch((e) => {
+      console.warn('[polaris] storage.persist() failed:', e);
+    });
+  }
 }
