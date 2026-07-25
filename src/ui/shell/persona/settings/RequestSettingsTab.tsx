@@ -1,8 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import {
-  getProviderModelBindingValue,
-  getProviderModelDisplayLabel,
-  isBuiltInProviderDisplay
+  getProviderModelDisplayLabel
 } from '../../apiProviderDisplay';
 import type { I18nKey } from '../../../../i18n/messages';
 import { useI18n } from '../../../../i18n/useI18n';
@@ -44,7 +42,6 @@ function ProviderBindingSettings({
   const fixedProviderId = activePersona?.advanced.providerId?.trim() || '';
   const fixedProvider = providers.find((provider) => provider.id === fixedProviderId) ?? null;
   const hasProviderBinding = Boolean(fixedProviderId || activePersona?.advanced.modelOverride.trim());
-  const fixedProviderBuiltIn = fixedProvider ? isBuiltInProviderDisplay(fixedProvider) : false;
 
   const updateProviderBinding = (providerId: string) => {
     if (!providerId) {
@@ -53,7 +50,10 @@ function ProviderBindingSettings({
     }
     const provider = providers.find((entry) => entry.id === providerId);
     if (!provider) return;
-    onUpdatePersona({ advanced: { providerId: provider.id, modelOverride: getProviderModelBindingValue(provider) } });
+    // modelOverride 留空，让请求组装那一层回落到 provider 的当前模型。
+    // 以前这里抄一份模型名当快照，之后在 provider 里改模型快照不跟着动，
+    // 于是要「切到别的 provider 再切回来」才生效。
+    onUpdatePersona({ advanced: { providerId: provider.id, modelOverride: '' } });
   };
 
   return (
@@ -100,19 +100,17 @@ function ProviderBindingSettings({
         <div className="ps-field-head">
           <span className="ps-field-label">{t('request.settings.modelLabel')}</span>
           <span className="ps-field-hint">
-            {fixedProviderBuiltIn
-              ? t('request.settings.builtInModelHint')
-              : fixedProvider
-                ? t('request.settings.providerModelHint', { name: fixedProvider.name })
-                : t('request.settings.globalModelHint')}
+            {fixedProvider
+              ? t('request.settings.providerModelHint', { name: fixedProvider.name })
+              : t('request.settings.globalModelHint')}
           </span>
         </div>
         <input
           className="ps-input ps-input--mono"
-          value={fixedProviderBuiltIn && fixedProvider ? getProviderModelDisplayLabel(fixedProvider) : (activePersona?.advanced.modelOverride || '')}
-          onChange={(event) => onUpdatePersona({ advanced: { modelOverride: event.target.value } })}
-          placeholder={fixedProviderBuiltIn ? t('request.settings.builtInModelPlaceholder') : t('request.settings.modelPlaceholder')}
-          disabled={fixedProviderBuiltIn}
+          value={fixedProvider ? getProviderModelDisplayLabel(fixedProvider) : ''}
+          placeholder={t('request.settings.modelPlaceholder')}
+          readOnly
+          disabled
         />
       </div>
     </>
