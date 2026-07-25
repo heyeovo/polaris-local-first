@@ -17,6 +17,7 @@ type MessageToolEventProps = {
   onSaveToolPreview: (message: ChatMessage) => void;
   onRollbackToolPreview: (message: ChatMessage) => void;
   onOpenToolbox: () => void;
+  onOpenToolResult?: (message: ChatMessage) => void;
   onInteractionBoundary?: () => void;
 };
 
@@ -40,6 +41,7 @@ export function MessageToolEvent({
   onSaveToolPreview,
   onRollbackToolPreview,
   onOpenToolbox,
+  onOpenToolResult,
   onInteractionBoundary
 }: MessageToolEventProps) {
   const { t } = useI18n();
@@ -213,7 +215,11 @@ export function MessageToolEvent({
           aria-label={expanded ? t('chat.toolEvent.collapseAria') : t('chat.toolEvent.expandAria')}
           onClick={(event) => {
             event.stopPropagation();
-            setExpanded((value) => !value);
+            if (tool.kind === 'invokeMcpTool' && onOpenToolResult) {
+              onOpenToolResult(message);
+            } else {
+              setExpanded((value) => !value);
+            }
           }}
         >
           <Icon name={expanded ? 'chevronDown' : 'chevron'} size={15} />

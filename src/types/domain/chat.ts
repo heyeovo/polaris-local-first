@@ -35,6 +35,7 @@ export interface ChatMessage {
   assistantName?: string;
   speakerCollaboratorId?: string;
   thinkingText?: string;
+  thinkingDurationMs?: number;
   voiceCache?: ChatMessageVoiceCache;
   nativeToolCalls?: ChatNativeToolCall[];
   toolInvocation?: ToolInvocation;

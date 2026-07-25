@@ -47,7 +47,7 @@ export function normalizeChatMessage(message: ChatMessage): ChatMessage {
   };
 }
 
-type AssistantReplyLike = Pick<AssistantReply | AssistantReplyProgress, 'model' | 'tokenCount' | 'tokenUsage' | 'thinkingText'>;
+type AssistantReplyLike = Pick<AssistantReply | AssistantReplyProgress, 'model' | 'tokenCount' | 'tokenUsage' | 'thinkingText' | 'thinkingDurationMs'>;
 
 export function buildAssistantMessagePatch(args: {
   messageId: string;
@@ -69,6 +69,7 @@ export function buildAssistantMessagePatch(args: {
     assistantName: args.assistantName,
     speakerCollaboratorId: args.speakerCollaboratorId,
     thinkingText: normalizeOptionalText(args.reply.thinkingText),
+    thinkingDurationMs: args.reply.thinkingDurationMs,
     nativeToolCalls: normalizeChatNativeToolCalls(args.messageId, args.nativeToolCalls)
   };
   if (args.reply.tokenUsage) {

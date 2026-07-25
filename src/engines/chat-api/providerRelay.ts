@@ -7,7 +7,7 @@ export {
   isProviderModelListRelayTarget,
   sanitizeProviderRelayHeaders
 } from './providerRelayShared';
-import { isAllowedProviderRelayTarget } from './providerRelayShared';
+import { isAllowedProviderRelayTarget, isCorsEnabledHostname } from './providerRelayShared';
 
 export const ANTHROPIC_BROWSER_ACCESS_HEADER = 'anthropic-dangerous-direct-browser-access';
 
@@ -53,6 +53,9 @@ export function shouldUseBrowserProviderRelay(api: ProviderProfile, request: Bui
   }
 
   if (endpoint.origin === currentOrigin) return false;
+
+  // Gateway (Ombre-Brain) already has CORS configured — skip relay
+  if (isCorsEnabledHostname(endpoint.hostname)) return false;
 
   void api;
   return true;

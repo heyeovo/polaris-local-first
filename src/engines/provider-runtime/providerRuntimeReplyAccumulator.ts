@@ -17,6 +17,7 @@ export type OpenAiToolCallAccumulator = {
 export type ReplyAccumulator = {
   content: string;
   thinkingText: string;
+  thinkingStartedAt?: number;
   model?: string;
   tokenCount?: number;
   tokenUsage?: ChatTokenUsage;
@@ -49,12 +50,17 @@ export function toAssistantReply(
       ...(call.providerMetadata ? { providerMetadata: call.providerMetadata } : {})
     }));
 
+  const thinkingDurationMs = target.thinkingStartedAt && normalizedThinkingText
+    ? Date.now() - target.thinkingStartedAt
+    : undefined;
+
   return {
     content: normalizedContent,
     model: target.model || fallbackModel,
     tokenCount: target.tokenCount,
     tokenUsage: target.tokenUsage,
     thinkingText: normalizedThinkingText,
+    thinkingDurationMs,
     nativeToolCalls,
     usedNativeToolCalls: nativeToolCalls.length > 0,
     nativeToolCallCount: nativeToolCalls.length,

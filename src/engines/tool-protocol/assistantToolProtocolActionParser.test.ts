@@ -1143,6 +1143,99 @@ describe('parseAssistantToolAction', () => {
     });
   });
 
+  it('keeps snake_case MCP parameter names that collide with built-in tool aliases', () => {
+    const result = parseAssistantToolAction({
+      kind: 'mcp__tavily__tavily_search',
+      query: 'polaris',
+      max_results: 5,
+      search_depth: 'advanced',
+      max_chars: 2000,
+      file_name: 'notes.md'
+    }, undefined, 'stable', {
+      mcpTools: [{
+        schemaName: 'mcp__tavily__tavily_search',
+        serverId: 'server-tavily',
+        serverName: 'tavily',
+        serverHandle: 'tavily',
+        transport: 'streamable-http',
+        url: 'https://example.test/mcp',
+        toolName: 'tavily_search',
+        description: 'Search the web',
+        inputSchema: { type: 'object' }
+      }]
+    });
+
+    expect(result.issue).toBeUndefined();
+    expect(result.action).toMatchObject({
+      kind: 'invokeMcpTool',
+      toolName: 'tavily_search',
+      argumentsObject: {
+        query: 'polaris',
+        max_results: 5,
+        search_depth: 'advanced',
+        max_chars: 2000,
+        file_name: 'notes.md'
+      }
+    });
+  });
+
+  it('keeps nested MCP argument keys untouched', () => {
+    const result = parseAssistantToolAction({
+      kind: 'mcp__tavily__tavily_extract',
+      arguments: {
+        urls: ['https://example.test'],
+        options: { max_chars: 100, include_raw_content: true }
+      }
+    }, undefined, 'stable', {
+      mcpTools: [{
+        schemaName: 'mcp__tavily__tavily_extract',
+        serverId: 'server-tavily',
+        serverName: 'tavily',
+        serverHandle: 'tavily',
+        transport: 'streamable-http',
+        url: 'https://example.test/mcp',
+        toolName: 'tavily_extract',
+        description: 'Extract page text',
+        inputSchema: { type: 'object' }
+      }]
+    });
+
+    expect(result.issue).toBeUndefined();
+    expect(result.action).toMatchObject({
+      argumentsObject: {
+        urls: ['https://example.test'],
+        options: { max_chars: 100, include_raw_content: true }
+      }
+    });
+  });
+
+  it('still canonicalizes the MCP envelope keys', () => {
+    const result = parseAssistantToolAction({
+      type: 'mcp__tavily__tavily_search',
+      target_label: 'tavily 搜索',
+      max_results: 3
+    }, undefined, 'stable', {
+      mcpTools: [{
+        schemaName: 'mcp__tavily__tavily_search',
+        serverId: 'server-tavily',
+        serverName: 'tavily',
+        serverHandle: 'tavily',
+        transport: 'streamable-http',
+        url: 'https://example.test/mcp',
+        toolName: 'tavily_search',
+        description: 'Search the web',
+        inputSchema: { type: 'object' }
+      }]
+    });
+
+    expect(result.issue).toBeUndefined();
+    expect(result.action).toMatchObject({
+      kind: 'invokeMcpTool',
+      targetLabel: 'tavily 搜索',
+      argumentsObject: { max_results: 3 }
+    });
+  });
+
   it('reports unavailable dynamic MCP tool actions without calling them unknown', () => {
     const result = parseAssistantToolAction({
       kind: 'mcp__github__github_read_file',

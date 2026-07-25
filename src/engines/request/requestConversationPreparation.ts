@@ -60,7 +60,7 @@ function applyRequestMessagePersonaTransforms(
     const sanitizedContent = shouldApplyRegex
       ? applyRegexRules(message.content, regexRules, 'input')
       : message.content;
-    if (!shouldApplyTemplate) {
+    if (!shouldApplyTemplate || message.role !== 'user') {
       return sanitizedContent === message.content
         ? message
         : { ...message, content: sanitizedContent };

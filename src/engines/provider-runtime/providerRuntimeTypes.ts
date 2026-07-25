@@ -229,6 +229,7 @@ export type AssistantReply = {
   tokenCount?: number;
   tokenUsage?: ChatTokenUsage;
   thinkingText?: string;
+  thinkingDurationMs?: number;
   nativeToolCalls?: AssistantNativeToolCall[];
   usedNativeToolCalls?: boolean;
   nativeToolCallCount?: number;

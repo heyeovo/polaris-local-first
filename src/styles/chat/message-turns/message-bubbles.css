@@ -73,6 +73,15 @@
 .bubble.assistant > .message-rich-text > * {
   max-width: 100%;
 }
+.message-timestamp {
+  align-self: flex-end;
+  margin-top: 2px;
+  padding-right: 2px;
+  font-size: 11px;
+  color: var(--text-tertiary);
+  user-select: none;
+  -webkit-user-select: none;
+}
 .user-bubble-action-menu {
   display: inline-flex;
   align-items: stretch;

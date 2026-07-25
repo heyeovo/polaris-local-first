@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'react';
 import type { CollectionShelf } from '../../../types/domain';
+import { isPolarisEmbed } from '../../../app/bootstrap/appLayoutSurfaceBootstrap';
 import { COLLECTION_FRONTSTAGE_SURFACES } from '../../frontstage/frontstageSurfaceRegistry';
 import { runSelectionAction } from '../../haptics';
 import { Icon, type IconName } from '../../Icon';
@@ -36,6 +37,9 @@ export function CollectionShelfTabs({
   onSetCollectionShelf
 }: CollectionShelfTabsProps) {
   const { t } = useI18n();
+
+  if (isPolarisEmbed()) return null;
+
   const visualNavItems = orderTabsForVisualBalance(navItems);
   const tabCount = visualNavItems.length;
   const handleSelect = (nextShelf: CollectionShelf, trigger: EventTarget | null) => {

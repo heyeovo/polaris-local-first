@@ -132,3 +132,30 @@ button {
 @keyframes slideFromBottom { from { transform: translate3d(0, 18px, 0); opacity: 0; } to { transform: translate3d(0, 0, 0); opacity: 1; } }
 @keyframes localSurfaceEnter { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes softPulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 0.8; } }
+
+/* ── Embed mode (inside ob-dashboard2 iframe) — remove Polaris bottom tab spacing ── */
+html[data-polaris-embed='ob'] {
+  --collection-bottom-nav-safe-area: 0px;
+  --collection-bottom-nav-padding-bottom: 0px;
+}
+
+/* Dialogue list: remove 68px reserved for hidden bottom tabs */
+html[data-polaris-embed='ob'] .collection-shelf-stack--dialogue .conversation-card-list {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Floating create button: don't leave room for bottom tabs */
+html[data-polaris-embed='ob'] .collection-floating-create-action {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Info shelf: reduce bottom spacing */
+html[data-polaris-embed='ob'] .collaborator-info-shelf .collaborator-detail-form {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  scroll-padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Code/image workspaces: reduce shelf padding */
+html[data-polaris-embed='ob'] .collection-shelf-stage {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}

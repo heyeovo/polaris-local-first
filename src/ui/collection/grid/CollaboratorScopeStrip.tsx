@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { normalizePersonaDefaultSummary } from '../../../config/persona/personaBaseCatalog';
-import type { Persona } from '../../../types/domain';
+import type { CollectionShelf, Persona } from '../../../types/domain';
 import { runSelectionAction } from '../../haptics';
 import { CollaboratorSigil } from '../../collaborator/CollaboratorSigil';
 import { CreateActionSheet } from '../../create/CreateActionSheet';
-import { Icon } from '../../Icon';
+import { Icon, type IconName } from '../../Icon';
 import { WorldMark } from '../../shell/WorldMark';
 import { CollaboratorCreatePicker } from '../../worlds/chat/collaborator/CollaboratorCreatePicker';
+import { isPolarisEmbed } from '../../../app/bootstrap/appLayoutSurfaceBootstrap';
 import { useI18n } from '../../../i18n';
 
 type CollaboratorScopeStripProps = {
@@ -25,6 +26,8 @@ type CollaboratorScopeStripProps = {
   onCreateFromBuilder: () => void;
   onCreateCustomCollaborator: () => void;
   onOpenSettings: () => void;
+  onSelectShelf?: (shelf: CollectionShelf) => void;
+  collectionShelf?: CollectionShelf;
 };
 
 export function CollaboratorScopeStrip({
@@ -38,14 +41,36 @@ export function CollaboratorScopeStrip({
   onClose,
   onCreateFromBuilder,
   onCreateCustomCollaborator,
-  onOpenSettings
+  onOpenSettings,
+  onSelectShelf,
+  collectionShelf
 }: CollaboratorScopeStripProps) {
   const { t, formatNumber } = useI18n();
   const [createPickerOpen, setCreatePickerOpen] = useState(false);
   const [editingOpen, setEditingOpen] = useState(false);
   const [aggregateSpinKey, setAggregateSpinKey] = useState(0);
+  const embedMode = isPolarisEmbed();
 
   if (!open) return null;
+
+  const handleSelectShelf = (shelf: CollectionShelf) => {
+    if (onSelectShelf) {
+      onSelectShelf(shelf);
+      onClose();
+    }
+  };
+
+  const SHELF_ICONS: Record<string, IconName> = {
+    project: 'navWorkspace',
+    code: 'navCard',
+    image: 'navImage',
+  };
+
+  const SHELF_LABELS: Record<string, string> = {
+    project: t('collection.nav.project'),
+    code: t('collection.nav.code'),
+    image: t('collection.nav.image'),
+  };
 
   const portalRoot = typeof document !== 'undefined'
     ? document.querySelector<HTMLElement>('.app-shell')
@@ -265,6 +290,29 @@ export function CollaboratorScopeStrip({
               </div>
             );
           })}
+
+          {embedMode && onSelectShelf && (
+            <>
+              <div className="collaborator-scope-section-divider" />
+              {(['project', 'code', 'image'] as const).map((shelf) => (
+                <button
+                  key={shelf}
+                  type="button"
+                  className={`collaborator-scope-card collaborator-scope-card--tool ${collectionShelf === shelf ? 'active' : ''}`}
+                  onClick={(event) => {
+                    runSelectionAction(() => handleSelectShelf(shelf), { element: event.currentTarget });
+                  }}
+                >
+                  <span className="collaborator-scope-card-title">
+                    <span className="collaborator-scope-card-badge">
+                      <Icon name={SHELF_ICONS[shelf]} size={18} />
+                    </span>
+                    <strong>{SHELF_LABELS[shelf]}</strong>
+                  </span>
+                </button>
+              ))}
+            </>
+          )}
         </div>
       </aside>
     </section>

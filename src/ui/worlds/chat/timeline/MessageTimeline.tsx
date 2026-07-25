@@ -108,6 +108,10 @@ export function MessageTimeline({ isWorldSettled }: MessageTimelineProps) {
   const [codeCardPreview, setCodeCardPreview] = useState<ChatCodeCardPreview>(null);
   const rowHeightsRef = useRef<Record<string, number>>({});
   const viewportRafRef = useRef<number | null>(null);
+  const bottomCorrectionRafRef = useRef<number | null>(null);
+  const lastBottomCorrectionTimeRef = useRef<number>(0);
+  const BOTTOM_CORRECTION_COOLDOWN_MS = 300;
+  const BOTTOM_CORRECTION_THRESHOLD_PX = 30;
   const [rowMetricsVersion, setRowMetricsVersion] = useState(0);
   const [timelineViewport, setTimelineViewport] = useState<TimelineViewport>({
     scrollTop: 0,
@@ -388,6 +392,41 @@ export function MessageTimeline({ isWorldSettled }: MessageTimelineProps) {
     observer.observe(container);
     return () => observer.disconnect();
   }, [conversationId, containerRef, measureTimelineViewport, messages.length]);
+  // Virtual scrolling correction: row heights are measured asynchronously by ResizeObserver.
+  // When measurements update, spacers resize, and the true bottom may shift.
+  // If we're in bottom-follow mode, correct to the real bottom after measurements settle.
+  // Throttled (cooldown) and threshold-gated to avoid visual jitter from micro-corrections.
+  useLayoutEffect(() => {
+    if (followMode !== 'bottom' || isGenerationActive) return;
+    const container = containerRef.current;
+    if (!container) return;
+
+    if (bottomCorrectionRafRef.current !== null) {
+      cancelAnimationFrame(bottomCorrectionRafRef.current);
+    }
+    // Double rAF: wait for all pending ResizeObserver callbacks to flush first.
+    bottomCorrectionRafRef.current = requestAnimationFrame(() => {
+      bottomCorrectionRafRef.current = requestAnimationFrame(() => {
+        bottomCorrectionRafRef.current = null;
+        const now = performance.now();
+        if (now - lastBottomCorrectionTimeRef.current < BOTTOM_CORRECTION_COOLDOWN_MS) return;
+        const maxTop = Math.max(0, container.scrollHeight - container.clientHeight);
+        if (Math.abs(container.scrollTop - maxTop) > BOTTOM_CORRECTION_THRESHOLD_PX) {
+          lastBottomCorrectionTimeRef.current = now;
+          container.style.scrollBehavior = 'auto';
+          container.scrollTop = maxTop;
+        }
+      });
+    });
+  }, [rowMetricsVersion, followMode, isGenerationActive, containerRef]);
+
+  useEffect(() => () => {
+    if (bottomCorrectionRafRef.current !== null) {
+      cancelAnimationFrame(bottomCorrectionRafRef.current);
+      bottomCorrectionRafRef.current = null;
+    }
+  }, []);
+
   const collapsedThinkingIds = useMemo(
     () => new Set(ui.collapsedThinkingMessageIds),
     [ui.collapsedThinkingMessageIds]
@@ -396,6 +435,28 @@ export function MessageTimeline({ isWorldSettled }: MessageTimelineProps) {
     () => new Set(ui.expandedCodeMessageIds),
     [ui.expandedCodeMessageIds]
   );
+  // When thinking is toggled, sync-scroll to the true bottom before virtual windowing
+  // recalculates spacers. This prevents a visible jitter between the height change
+  // and the deferred ResizeObserver correction.
+  const prevCollapsedCountRef = useRef(collapsedThinkingIds.size);
+  useLayoutEffect(() => {
+    const prevCount = prevCollapsedCountRef.current;
+    const currCount = collapsedThinkingIds.size;
+    prevCollapsedCountRef.current = currCount;
+
+    // Only act when thinking was expanded (collapsed count decreased).
+    // Collapsing shrinks the row, which naturally keeps the bottom stable.
+    if (currCount >= prevCount) return;
+    if (followMode !== 'bottom' || isGenerationActive) return;
+    const container = containerRef.current;
+    if (!container) return;
+
+    const maxTop = Math.max(0, container.scrollHeight - container.clientHeight);
+    if (Math.abs(container.scrollTop - maxTop) > 5) {
+      container.style.scrollBehavior = 'auto';
+      container.scrollTop = maxTop;
+    }
+  }, [collapsedThinkingIds.size, followMode, isGenerationActive, containerRef]);
   const renderItems = useMemo(() => buildTimelineRenderItems(messages), [messages]);
   const timelineWindow = useMemo(
     () => resolveTimelineWindow(renderItems, followMode, ui.focusedMessageId, {
@@ -425,6 +486,7 @@ export function MessageTimeline({ isWorldSettled }: MessageTimelineProps) {
     saveToolPreview: actions.saveToolPreview,
     rollbackToolPreview: actions.rollbackToolPreview,
     openToolbox: actions.openToolbox,
+    openToolResult: actions.openToolResult,
     openCodeCard: actions.openCodeCard,
     runCodeCard,
     setCommandStatus: actions.setCommandStatus
@@ -440,6 +502,7 @@ export function MessageTimeline({ isWorldSettled }: MessageTimelineProps) {
     actions.forkFromMessage,
     actions.openCodeCard,
     actions.openToolbox,
+    actions.openToolResult,
     actions.openThinkingSummary,
     actions.setCommandStatus,
     actions.removeEditingAttachment,

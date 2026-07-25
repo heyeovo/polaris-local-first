@@ -13,6 +13,7 @@ import {
   useChatUi
 } from './chat/context/ChatContext';
 import type { ChatUiState } from './chat/context/ChatUiState';
+import { ToolResultSheet } from './chat/sheets/ToolResultSheet';
 
 const ThinkingSheet = lazy(() => loadThinkingSheetModule().then((module) => ({ default: module.ThinkingSheet })));
 
@@ -36,6 +37,9 @@ function ChatWorldLayout({ shell }: ChatWorldProps) {
   const dragDepthRef = useRef(0);
   const thinkingSummaryMessage = ui.thinkingSummaryMessageId
     ? stablePayload.messages.find((message) => message.id === ui.thinkingSummaryMessageId) ?? null
+    : null;
+  const toolResultMessage = ui.toolResultMessageId
+    ? stablePayload.messages.find((message) => message.id === ui.toolResultMessageId) ?? null
     : null;
   const isFileDrag = (event: DragEvent<HTMLElement>) => event.dataTransfer?.types.includes('Files') ?? false;
   const handleDragEnter = (event: DragEvent<HTMLElement>) => {
@@ -90,6 +94,12 @@ function ChatWorldLayout({ shell }: ChatWorldProps) {
             onClose={actions.closeThinkingSummary}
           />
         </Suspense>
+      ) : null}
+      {toolResultMessage?.toolInvocation ? (
+        <ToolResultSheet
+          tool={toolResultMessage.toolInvocation}
+          onClose={() => ui.setToolResultMessageId(null)}
+        />
       ) : null}
     </section>
   );

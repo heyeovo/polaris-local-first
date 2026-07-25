@@ -13,6 +13,8 @@ import {
 } from './providerRelay';
 import type { ProviderProfile } from '../../types/domain';
 import { resolveProviderRuntimeRequestAdapter } from '../provider-runtime/providerRuntimeAdapters';
+import { useChatStore } from '../../stores/chatStore';
+import { consumeForceHandoffFlag, consumeSkipHandoffFlag } from './sessionHandoffFlag';
 
 function bodyHasTools(body: Record<string, unknown>) {
   const nestedBody = body.body;
@@ -120,13 +122,26 @@ export async function executeBuiltRequest(params: {
   rawProviderError?: boolean;
 }) {
   const { api, request, forceRelay = false, signal, onProgress, onChunk, rawProviderError = false } = params;
+  const conversationId = useChatStore.getState().activeConversationId;
+  const skipHandoff = consumeSkipHandoffFlag();
+  const { force: forceHandoff, bucketIds } = consumeForceHandoffFlag();
+
+  // Build X-Ombre headers to be forwarded to the Gateway.
+  // When relay is used the relay handler only reads body.headers, so we inject
+  // these into the relay payload.  When talking directly they go as HTTP headers.
+  const ombreHeaders: Record<string, string> = {};
+  if (conversationId) ombreHeaders['X-Ombre-Session-Id'] = conversationId;
+  if (skipHandoff) ombreHeaders['X-Ombre-Skip-Handoff'] = '1';
+  if (forceHandoff) ombreHeaders['X-Ombre-Force-Handoff'] = '1';
+  if (bucketIds) ombreHeaders['X-Ombre-Handoff-Buckets'] = bucketIds.join(',');
+
   const shouldUseRelay = forceRelay || shouldUseBrowserProviderRelay(api, request);
   const endpoint = shouldUseRelay ? buildInternalApiEndpoint('/api/provider-relay') : request.endpoint;
   const headers = shouldUseRelay ? { 'Content-Type': 'application/json' } : resolveDirectRequestHeaders(request);
   const body = shouldUseRelay
     ? {
         endpoint: request.endpoint,
-        headers: request.headers,
+        headers: { ...request.headers, ...ombreHeaders },
         body: request.body
       }
     : request.body;
@@ -154,7 +169,10 @@ export async function executeBuiltRequest(params: {
 
   const res = await fetch(requestForTransport.endpoint, {
     method: 'POST',
-    headers: requestForTransport.headers,
+    headers: {
+      ...requestForTransport.headers,
+      ...(shouldUseRelay ? {} : ombreHeaders),
+    },
     body: JSON.stringify(requestForTransport.body),
     signal
   });

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { ChatMessage } from '../../../../types/domain';
 import { Icon } from '../../../Icon';
 import { formatTokenCount } from '../chatTokenCount';
@@ -27,6 +28,7 @@ export function MessageMeta({
   splitIdentityLines = false
 }: MessageMetaProps) {
   const { formatNumber, t } = useI18n();
+  const [thinkingExpanded, setThinkingExpanded] = useState(false);
   const tokenLabel = formatTokenCount(message.tokenCount, message.tokenUsage, {
     formatNumber,
     totalLabel: (count) => t('chat.messageMeta.totalTokens', { count })
@@ -39,6 +41,9 @@ export function MessageMeta({
       {tokenLabel && <span className="message-identity-pill">{tokenLabel}</span>}
     </>
   );
+  const thinkingDurationLabel = message.thinkingDurationMs != null
+    ? `${(message.thinkingDurationMs / 1000).toFixed(1)}s`
+    : null;
 
   return (
     <>
@@ -66,8 +71,8 @@ export function MessageMeta({
           <button
             type="button"
             className={`thinking-inline-trigger ${isThinkingActive ? 'active' : ''}`}
-            aria-label={isThinkingActive ? t('chat.messageActions.openThinkingActive') : t('chat.messageActions.openThinking')}
-            title={isThinkingActive ? t('chat.messageActions.thinkingTitleActive') : t('chat.messageActions.thinkingTitle')}
+            aria-label={t('chat.messageActions.openThinking')}
+            title={t('chat.messageActions.thinkingTitle')}
             onClick={() => onOpenThinkingSummary(message)}
           >
             <span className={`thinking-inline-icon ${isThinkingActive ? 'spinning' : ''}`} aria-hidden="true">
@@ -76,6 +81,28 @@ export function MessageMeta({
           </button>
         ) : null}
       </div>
+      {showThinking && message.thinkingText ? (
+        <div className={`thinking-inline-block ${thinkingExpanded ? 'expanded' : 'collapsed'}`}>
+          <button
+            type="button"
+            className="thinking-inline-block-toggle"
+            onClick={() => setThinkingExpanded((v) => !v)}
+          >
+            <span className={`thinking-inline-block-icon ${isThinkingActive ? 'spinning' : ''}`} aria-hidden="true">
+              <Icon name="polarisStar" size={13} color="polarisDeepSpace" />
+            </span>
+            <span className="thinking-inline-block-label">
+              {t('chat.messageActions.thinkingTitleActive')}{thinkingDurationLabel ? ` (${thinkingDurationLabel})` : ''}
+            </span>
+            <Icon name={thinkingExpanded ? 'chevronUp' : 'chevronDown'} size={14} />
+          </button>
+          {thinkingExpanded ? (
+            <div className="thinking-inline-block-content">
+              {message.thinkingText}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
     </>
   );
 }

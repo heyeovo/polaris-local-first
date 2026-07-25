@@ -22,6 +22,16 @@ export function applyAppLayoutSurfaceBootstrap(root: HTMLElement, search: string
   return requestedSurface;
 }
 
+export function isPolarisEmbed(): boolean {
+  if (typeof document === 'undefined') return false;
+  return document.documentElement.dataset.polarisEmbed === 'ob';
+}
+
 if (typeof window !== 'undefined' && typeof document !== 'undefined') {
   applyAppLayoutSurfaceBootstrap(document.documentElement, window.location.search);
+
+  const embedSearchParams = new URLSearchParams(window.location.search);
+  if (embedSearchParams.get('embed') === 'ob') {
+    document.documentElement.dataset.polarisEmbed = 'ob';
+  }
 }

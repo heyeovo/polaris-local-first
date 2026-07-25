@@ -916,11 +916,15 @@ export function buildDirectToolExecutionContext({
       }
 
       const server = runtime.mcpServers.find((entry: { id: string }) => entry.id === serverId) ?? null;
+      const mcpHeaders = [
+        ...(server?.headers ?? []),
+        { id: 'x-ombre-session', key: 'X-Ombre-Session-Id', value: conversationId },
+      ];
       const result = await invokeMcpTool({
         tool,
         argumentsObject,
         timeoutSeconds: runtime.mcpToolTimeoutSeconds,
-        headers: server?.headers ?? []
+        headers: mcpHeaders
       });
       const attachments = result.ok && result.attachmentContent?.length
         ? await Promise.all(result.attachmentContent.map((content, index) => createMcpAttachment(content, toolName, index)))

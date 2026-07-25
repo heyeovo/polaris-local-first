@@ -309,11 +309,6 @@ function buildContextSnapshotSections(
   const hasRoomOrWorkspaceTools = receipt.hasRoomContentTools || receipt.hasWorkspaceFileTools;
   const sections: AssistantToolPromptSection[] = [
     {
-      name: 'ui_context_capability',
-      label: '界面上下文快照',
-      content: buildUiContextPrompt(context)
-    },
-    {
       name: 'attachment_context_capability',
       label: '附件上下文快照',
       content: receipt.hasAttachmentOrArchiveTools ? buildAttachmentContextPrompt(context) : ''

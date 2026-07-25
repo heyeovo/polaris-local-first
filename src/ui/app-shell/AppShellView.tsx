@@ -4,6 +4,8 @@ import { AppReplyNotificationStack } from './AppReplyNotificationStack';
 import { DesktopAppShellFrame } from './DesktopAppShellFrame';
 import { MobileAppShellFrame } from './MobileAppShellFrame';
 import { PersistenceReadFailureNotice } from './PersistenceReadFailureNotice';
+import { WindowSettingsSheet } from '../shell/WindowSettingsSheet';
+import { HandoffConfirmSheet } from '../shell/HandoffConfirmSheet';
 import { WorldFrameBoundary, WorldFrameFallback } from './WorldFrameBoundary';
 import type { useAppShellViewController } from './useAppShellViewController';
 
@@ -59,7 +61,11 @@ export function AppShellView({
   collectionScopeDrawerOpen,
   collectionFrameInteractive,
   chatFrameInteractive,
-  groupFrameInteractive
+  groupFrameInteractive,
+  windowSettingsOpen,
+  setWindowSettingsOpen,
+  handoffConfirmOpen,
+  setHandoffConfirmOpen,
 }: AppShellViewProps) {
   const worldStack = (
     <section className="world-stack">
@@ -161,7 +167,21 @@ export function AppShellView({
         </DesktopAppShellFrame>
       ) : (
         <MobileAppShellFrame topbarProps={topbarProps}>
-          {worldStack}
+          {handoffConfirmOpen ? (
+            <HandoffConfirmSheet
+              onClose={() => setHandoffConfirmOpen(false)}
+            />
+          ) : windowSettingsOpen ? (
+            <WindowSettingsSheet
+              onClose={() => setWindowSettingsOpen(false)}
+              onNewWindow={() => {
+                setWindowSettingsOpen(false);
+                setHandoffConfirmOpen(true);
+              }}
+            />
+          ) : (
+            worldStack
+          )}
         </MobileAppShellFrame>
       )}
 

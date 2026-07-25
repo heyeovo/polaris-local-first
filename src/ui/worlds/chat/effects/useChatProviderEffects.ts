@@ -16,7 +16,7 @@ type UseChatProviderEffectsArgs = {
 export function useChatProviderEffects({ ui, store, derived }: UseChatProviderEffectsArgs) {
   useResetUiStateOnConversationChange(store.chat.activeConversationId, ui);
   useCleanupEditingEffect(ui, derived.messages);
-  useCleanupThinkingStateEffect(ui, derived.messages);
+  useCleanupThinkingStateEffect(ui, derived.messages, derived.sending);
   useCleanupExpandedCodeEffect(ui, derived.messages);
   useFocusMessageEffect({
     focusedMessageId: derived.focusedMessageId,

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { runSelectionAction } from '../haptics';
 import { useCollectionWorldController } from '../../app/collection/useCollectionWorldController';
+import { setForceHandoffForNextRequest, setSkipHandoffForNextRequest } from '../../engines/chat-api/sessionHandoffFlag';
 import { CollaboratorScopeStrip } from '../collection/grid/CollaboratorScopeStrip';
 import { CollectionFloatingCreateAction } from '../collection/grid/CollectionFloatingCreateAction';
 import { CollectionShelfTabs } from '../collection/grid/CollectionShelfTabs';
@@ -9,6 +10,7 @@ import { DialogueCollectionShelf } from '../collection/grid/DialogueCollectionSh
 import { CollaboratorInfoShelf } from '../collection/info/CollaboratorInfoShelf';
 import { ImageCollectionShelf } from '../collection/images/ImageCollectionShelf';
 import { CodeProjectCollectionShelfPages } from './collection/CodeProjectCollectionShelfPages';
+import { Icon } from '../Icon';
 import { useI18n } from '../../i18n';
 
 type CollectionWorldProps = {
@@ -80,6 +82,9 @@ export function CollectionWorld({
     onDetailOpenChange(controller.collectionShelf === 'code' && controller.codeWorkshopOpen);
   }, [controller.codeWorkshopOpen, controller.collectionShelf, onDetailOpenChange]);
 
+  const [showNewConvDialog, setShowNewConvDialog] = useState(false);
+  const [newConvMode, setNewConvMode] = useState<'handoff' | 'clean'>('handoff');
+
   useEffect(() => () => onDetailOpenChange(false), [onDetailOpenChange]);
 
   useEffect(() => {
@@ -102,6 +107,10 @@ export function CollectionWorld({
         onCreateFromBuilder={onOpenCollaboratorBuilderForCreate}
         onCreateCustomCollaborator={onCreateCustomCollaborator}
         onOpenSettings={onOpenSettings}
+        onSelectShelf={(shelf) => {
+          controller.setCollectionShelf(shelf);
+        }}
+        collectionShelf={controller.collectionShelf}
       />
 
       <div className={`surface-motion-local-stage collection-shelf-stage ${searchOpen ? 'collection-shelf-stage--controls-open' : ''}`}>
@@ -249,8 +258,99 @@ export function CollectionWorld({
         {controller.ready && activeShelf === 'dialogue' ? (
           <CollectionFloatingCreateAction
             label={t('collection.world.newConversation')}
-            onPress={controller.onCreateConversation}
+            onPress={() => setShowNewConvDialog(true)}
           />
+        ) : null}
+        {showNewConvDialog ? (
+          <div className="settings-overlay" onClick={() => setShowNewConvDialog(false)}>
+            <div className="settings-sheet menu-sheet" onClick={(e) => e.stopPropagation()}>
+              <div className="sheet-handle" />
+              <div className="menu-sheet-page">
+                <div className="menu-sheet-header">
+                  <button
+                    type="button"
+                    className="menu-sheet-back"
+                    aria-label={t('common.back')}
+                    onClick={() => setShowNewConvDialog(false)}
+                  >
+                    <span className="menu-sheet-back-icon"><Icon name="chevron" size={26} /></span>
+                  </button>
+                  <div className="menu-sheet-title">
+                    <small>{t('common.newConversation')}</small>
+                    <h2>选择模式</h2>
+                  </div>
+                </div>
+
+                <div className="collaborator-scope-drawer-list" role="tablist">
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={newConvMode === 'handoff'}
+                    className={`collaborator-scope-card collaborator-scope-card--tool ${newConvMode === 'handoff' ? 'active' : ''}`}
+                    onClick={() => setNewConvMode('handoff')}
+                    style={{ width: '100%' }}
+                  >
+                    <span className="collaborator-scope-card-title">
+                      <span className="collaborator-scope-card-badge">
+                        <Icon name="navDialogue" size={18} />
+                      </span>
+                      <strong>带 Handoff</strong>
+                    </span>
+                    <span className="collaborator-scope-card-meta">
+                      <span>注入钉选桶、最近记忆等上下文</span>
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={newConvMode === 'clean'}
+                    className={`collaborator-scope-card collaborator-scope-card--tool ${newConvMode === 'clean' ? 'active' : ''}`}
+                    onClick={() => setNewConvMode('clean')}
+                    style={{ width: '100%' }}
+                  >
+                    <span className="collaborator-scope-card-title">
+                      <span className="collaborator-scope-card-badge">
+                        <Icon name="plus" size={18} />
+                      </span>
+                      <strong>不带 Handoff</strong>
+                    </span>
+                    <span className="collaborator-scope-card-meta">
+                      <span>干净启动，不注入历史记忆</span>
+                    </span>
+                  </button>
+                </div>
+
+                <section className="menu-section" style={{ marginTop: '1rem' }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowNewConvDialog(false);
+                      if (newConvMode === 'clean') {
+                        setSkipHandoffForNextRequest(true);
+                      } else {
+                        setForceHandoffForNextRequest();
+                      }
+                      controller.onCreateConversation();
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      borderRadius: 14,
+                      border: 'none',
+                      background: 'var(--color-primary)',
+                      color: '#fff',
+                      fontSize: '1rem',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    确认创建
+                  </button>
+                </section>
+              </div>
+            </div>
+          </div>
         ) : null}
         <CollectionShelfTabs
           collectionShelf={controller.collectionShelf}

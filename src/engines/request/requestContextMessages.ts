@@ -228,7 +228,11 @@ export function buildRequestContextToolContent(toolInvocation: ToolInvocation) {
     formatWorkspaceReferenceDocs(payload.workspaceReferenceDocs),
     formatWorkspaceReferenceReads(payload.workspaceReferenceDocReads),
     formatReadableContextCandidates(payload.readableContextCandidates),
-    formatMcpResultEvidence(payload.mcpResult),
+    formatMcpResultEvidence(
+      (payload.detailText || payload.detailExcerpt) && payload.mcpResult
+        ? (() => { const r = { ...(payload.mcpResult as Record<string, unknown>) }; delete r.structuredContent; return r; })()
+        : payload.mcpResult
+    ),
     formatProjectFileEffects(payload.projectFileEffects),
     formatProjectDiagnostics(payload.projectDiagnostics),
     payload.detailOmitted ? '详情：已省略原始执行细节，避免把日志或代码碎片继续回放给模型。' : '',

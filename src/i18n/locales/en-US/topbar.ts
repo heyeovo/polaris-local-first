@@ -4,6 +4,7 @@ export const topbar = {
   'topbar.switchRoom': 'Switch room',
   'topbar.switchCollaboratorSpace': 'Switch collaborator space',
   'topbar.previewActive': 'Previewing',
+  'topbar.windowSettings': 'Window Settings',
   'topbar.secretPromptExperimental': 'Experimental sandbox is enabled.\nEnter the passphrase to keep it enabled; leave blank to return to safe mode.',
   'topbar.secretPromptLocked': 'Enter the hidden passphrase.\nA correct passphrase enables the experimental sandbox.',
   'topbar.sandboxLocked': 'runCode sandbox returned to safe mode.',

@@ -290,6 +290,53 @@ function canonicalizeKind(kind: string) {
   return ACTION_KIND_ALIASES[normalized] ?? kind.trim();
 }
 
+// MCP tool parameters belong to the remote server, not to us. Its schema is the
+// only authority on their names — rewriting `max_results` to `maxResults`
+// because our own tools spell it that way makes the remote reject the call.
+// So an MCP action only gets its envelope keys canonicalized; every other key,
+// and every value below it, reaches the server exactly as the model wrote it.
+const MCP_SCHEMA_NAME_PREFIX = 'mcp__';
+const MCP_KIND_KEY_PRIORITY = ['kind', 'type', 'name'];
+
+function aliasForKey(key: string) {
+  const normalized = normalizeAliasKey(key);
+  return KEY_ALIASES[normalized] ?? KEY_ALIASES[normalized.replace(/_/g, '')];
+}
+
+function findMcpSchemaNameKey(object: Record<string, unknown>) {
+  const kindKeys = Object.keys(object).filter((key) => aliasForKey(key) === 'kind');
+  const carriesSchemaName = (key: string) => {
+    const value = object[key];
+    return typeof value === 'string' && value.trim().startsWith(MCP_SCHEMA_NAME_PREFIX);
+  };
+
+  // Same precedence the generic path uses: a literal `kind` wins over `type`,
+  // which wins over `name`, so a tool parameter called `name` is never mistaken
+  // for the action kind.
+  for (const preferred of MCP_KIND_KEY_PRIORITY) {
+    const match = kindKeys.find((key) => normalizeAliasKey(key) === preferred);
+    if (match && carriesSchemaName(match)) return match;
+  }
+  return kindKeys.find(carriesSchemaName);
+}
+
+function canonicalizeMcpToolAction(
+  object: Record<string, unknown>,
+  schemaNameKey: string
+) {
+  const entries = Object.entries(object).map(([key, entryValue]) => {
+    if (key === schemaNameKey) {
+      return ['kind', typeof entryValue === 'string' ? entryValue.trim() : entryValue] as const;
+    }
+    if (aliasForKey(key) === 'targetLabel') {
+      return ['targetLabel', entryValue] as const;
+    }
+    return [key, entryValue] as const;
+  });
+
+  return Object.fromEntries(entries);
+}
+
 export function canonicalizeAssistantToolValue(value: unknown): unknown {
   if (Array.isArray(value)) {
     return value.map(canonicalizeAssistantToolValue);
@@ -298,6 +345,11 @@ export function canonicalizeAssistantToolValue(value: unknown): unknown {
   const object = asObject(value);
   if (!object) {
     return value;
+  }
+
+  const mcpSchemaNameKey = findMcpSchemaNameKey(object);
+  if (mcpSchemaNameKey) {
+    return canonicalizeMcpToolAction(object, mcpSchemaNameKey);
   }
 
   const hasExplicitKind = typeof object.kind === 'string' || typeof object.type === 'string';

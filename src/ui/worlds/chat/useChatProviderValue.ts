@@ -124,6 +124,8 @@ function buildUiSection(args: {
     latestRetryableAssistantId: args.derived.latestRetryableAssistantId,
     activePreviewMessage: args.derived.activePreviewMessage,
     thinkingSummaryMessageId: args.ui.thinkingSummaryMessageId,
+    toolResultMessageId: args.ui.toolResultMessageId,
+    setToolResultMessageId: args.ui.setToolResultMessageId,
     codeCardActionModeByMessageId: args.derived.codeCardActionModeByMessageId,
     codeCardProgressByMessageId: args.derived.codeCardProgressByMessageId
   };
@@ -273,6 +275,9 @@ function buildActionsSection(args: {
       args.ui.setCommandStatus(args.t('chat.command.themeDefaultRestored'));
     },
     openToolbox: args.openToolbox,
+    openToolResult: (message: ChatMessage) => {
+      args.ui.setToolResultMessageId(message.id);
+    },
     createConversation: args.chatActions.createConversation,
     openConversation: (conversationId: string) => {
       if (conversationId !== args.store.chat.activeConversationId) {

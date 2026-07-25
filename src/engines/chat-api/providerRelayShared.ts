@@ -41,6 +41,14 @@ function normalizeRelayPath(pathname: string) {
   return pathname.replace(/\/+$/, '').toLowerCase();
 }
 
+const CORS_ENABLED_HOSTNAMES = new Set([
+  'foryan.zeabur.app',
+]);
+
+export function isCorsEnabledHostname(hostname: string) {
+  return CORS_ENABLED_HOSTNAMES.has(hostname.trim().toLowerCase());
+}
+
 function pathContainsAny(pathname: string, hints: string[]) {
   return hints.some((hint) => pathname.includes(hint));
 }

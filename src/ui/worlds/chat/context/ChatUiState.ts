@@ -53,6 +53,7 @@ export function useChatUiState() {
   const [collapsedThinkingMessageIds, setCollapsedThinkingMessageIds] = useState<string[]>([]);
   const [seenThinkingMessageIds, setSeenThinkingMessageIds] = useState<string[]>([]);
   const [thinkingSummaryMessageId, setThinkingSummaryMessageId] = useState<string | null>(null);
+  const [toolResultMessageId, setToolResultMessageId] = useState<string | null>(null);
   const [expandedCodeMessageIds, setExpandedCodeMessageIds] = useState<string[]>([]);
   const [generationByConversationId, setGenerationByConversationId] = useState<ConversationGenerationMap>({});
   const [submitFlight, setSubmitFlight] = useState<ChatSubmitFlightState>(null);
@@ -216,6 +217,8 @@ export function useChatUiState() {
     setSeenThinkingMessageIds,
     thinkingSummaryMessageId,
     setThinkingSummaryMessageId,
+    toolResultMessageId,
+    setToolResultMessageId,
     expandedCodeMessageIds,
     setExpandedCodeMessageIds,
     generationByConversationId,

@@ -147,6 +147,32 @@ export async function restoreStructuredImportToLocalDataRepository(
     return chatReadback.commitMeta;
   });
 
+  const buildImportValidationReport = (
+    commitMeta: LocalDataCommitMeta,
+    domain: LocalDataDomain,
+    metadata?: Partial<Record<string, string | null>>,
+  ): LocalDataMigrationValidationReport => ({
+    id: `${domain}:${commitMeta.commitId}:validation`,
+    domain,
+    commitId: commitMeta.commitId,
+    version: commitMeta.version,
+    validatedAt: commitMeta.committedAt,
+    stagingHydrated: true,
+    legacyBaselineCount: 0,
+    legacyBaselineObjectIds: [],
+    activeBaselineObjectIds: [],
+    activeObjectCount: 0,
+    activeObjectIds: [],
+    quarantinedObjectCount: 0,
+    quarantinedObjectIds: [],
+    duplicateObjectIdCount: 0,
+    missingActiveCollaboratorIdCount: 0,
+    missingActiveCollaboratorIds: [],
+    activeIncompleteRowCount: 0,
+    activeTimedOutRowCount: 0,
+    recoveredMetadata: metadata ?? {},
+  });
+
   await restoreDomain('collection', async () => {
     const collectionPlan = buildCollectionMigrationPlan({
       id: `import-collection-${committedAt}`,
@@ -155,7 +181,11 @@ export async function restoreStructuredImportToLocalDataRepository(
       version,
       updatedAt: committedAt
     });
-    return await repository.commit(collectionPlan.unitOfWork);
+    const commitMeta = await repository.commit(collectionPlan.unitOfWork);
+    validationReports.collection = buildImportValidationReport(commitMeta, 'collection', {
+      activeProjectId: payload.spaceState.collectionProjectId ?? null,
+    });
+    return commitMeta;
   });
 
   await restoreDomain('persona', async () => {
@@ -169,7 +199,11 @@ export async function restoreStructuredImportToLocalDataRepository(
       version,
       updatedAt: committedAt
     });
-    return await repository.commit(personaPlan.unitOfWork);
+    const commitMeta = await repository.commit(personaPlan.unitOfWork);
+    validationReports.persona = buildImportValidationReport(commitMeta, 'persona', {
+      activeCollaboratorId: payload.personaState.activeCollaboratorId,
+    });
+    return commitMeta;
   });
 
   await restoreDomain('runtime', async () => {
@@ -179,7 +213,9 @@ export async function restoreStructuredImportToLocalDataRepository(
       version,
       updatedAt: committedAt
     });
-    return await repository.commit(runtimePlan.unitOfWork);
+    const commitMeta = await repository.commit(runtimePlan.unitOfWork);
+    validationReports.runtime = buildImportValidationReport(commitMeta, 'runtime');
+    return commitMeta;
   });
 
   await restoreDomain('space', async () => {
@@ -189,7 +225,9 @@ export async function restoreStructuredImportToLocalDataRepository(
       version,
       updatedAt: committedAt
     });
-    return await repository.commit(spacePlan.unitOfWork);
+    const commitMeta = await repository.commit(spacePlan.unitOfWork);
+    validationReports.space = buildImportValidationReport(commitMeta, 'space');
+    return commitMeta;
   });
 
   await restoreDomain('document', async () => {
@@ -204,7 +242,9 @@ export async function restoreStructuredImportToLocalDataRepository(
       version,
       updatedAt: committedAt
     });
-    return await repository.commit(documentPlan.unitOfWork);
+    const commitMeta = await repository.commit(documentPlan.unitOfWork);
+    validationReports.document = buildImportValidationReport(commitMeta, 'document');
+    return commitMeta;
   });
 
   await restoreDomain('asset', async () => {
@@ -231,7 +271,9 @@ export async function restoreStructuredImportToLocalDataRepository(
       version,
       updatedAt: committedAt
     });
-    return await repository.commit(assetPlan.unitOfWork);
+    const commitMeta = await repository.commit(assetPlan.unitOfWork);
+    validationReports.asset = buildImportValidationReport(commitMeta, 'asset');
+    return commitMeta;
   });
 
   let promotedDomains: LocalDataDomain[] = [];

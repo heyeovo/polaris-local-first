@@ -394,23 +394,28 @@ export function MessageContent({
     return renderRichText(displayedMessageContent);
   }
 
+  const shouldShowThinkingProjection = !proseContent && codeBlocks.length === 0 && toolDraftBlocks.length === 0 && Boolean(visibleThinkingText);
+  // During streaming, when text begins appearing alongside thinking, keep the thinking
+  // projection visible above the text instead of closing it (which would cause overlap).
+  const showStreamingThinking = shouldPreferInlineCode && Boolean(visibleThinkingText);
+
   if (shouldPreferInlineCode) {
     const inlineContent = shouldCollapseProjectedCode
       ? stripCodeBlocksFromMessage(contentWithoutToolDrafts).trim()
       : contentWithoutToolDrafts.trim();
 
-    if (!inlineContent && projectedCodeBlocks.length === 0 && toolDraftBlocks.length === 0 && !hasThinkingProjection) {
+    if (!inlineContent && projectedCodeBlocks.length === 0 && toolDraftBlocks.length === 0 && !hasThinkingProjection && !showStreamingThinking) {
       return null;
     }
 
     return (
       <>
-        {renderAssistantProse(inlineContent)}
-        {hasThinkingProjection && visibleThinkingText ? (
+        {(hasThinkingProjection || showStreamingThinking) ? (
           <MessageThinkingProjection thinkingText={visibleThinkingText} />
         ) : closingThinkingText ? (
           <MessageThinkingProjection thinkingText={closingThinkingText} phase="closing" />
         ) : null}
+        {renderAssistantProse(inlineContent)}
         {renderProjectedCodeBlocks(t, message.id, projectedCodeBlocks, copiedProjectedCodeKey, (block) => {
           void copyProjectedCode(block);
         }, shouldDeferProjectedCodeBody, hasCodeWriteProjection ? 'sandbox' : 'plain')}
@@ -420,7 +425,6 @@ export function MessageContent({
       </>
     );
   }
-  const shouldShowThinkingProjection = !proseContent && codeBlocks.length === 0 && toolDraftBlocks.length === 0 && Boolean(visibleThinkingText);
 
   if (!displayedMessageContent.trim() && codeBlocks.length === 0 && toolDraftBlocks.length === 0 && !shouldShowThinkingProjection) {
     return null;

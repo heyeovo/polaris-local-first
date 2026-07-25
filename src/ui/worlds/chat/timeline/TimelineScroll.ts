@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { ChatMessage } from '../../../../types/domain';
 import { useTimelineInsertCompensation } from '../useTimelineInsertCompensation';
 
@@ -115,6 +115,7 @@ export function useTimelineScroll({
   const ignoreProgrammaticScrollUntilRef = useRef(0);
   const lastProgrammaticScrollTopRef = useRef<number | null>(null);
   const programmaticScrollBehaviorRef = useRef<ScrollBehavior | null>(null);
+  const pendingBottomCorrectionRef = useRef<number | null>(null);
   const [followMode, setFollowMode] = useState<FollowMode>('bottom');
   const [showJumpToLatest, setShowJumpToLatest] = useState(false);
   const [showJumpToTop, setShowJumpToTop] = useState(false);
@@ -217,6 +218,7 @@ export function useTimelineScroll({
 
     if (snapshot.followMode === 'bottom') {
       scrollToBottom('auto');
+      scheduleBottomCorrection();
       return;
     }
 
@@ -254,6 +256,30 @@ export function useTimelineScroll({
       return;
     }
     scrollToBottom('auto');
+    // Deferred re-scroll: virtual scrolling uses estimated row heights initially.
+    // After ResizeObserver measures real heights and spacers resize, correct to the true bottom.
+    scheduleBottomCorrection();
+  };
+
+  const scheduleBottomCorrection = () => {
+    if (pendingBottomCorrectionRef.current !== null) {
+      cancelAnimationFrame(pendingBottomCorrectionRef.current);
+    }
+    pendingBottomCorrectionRef.current = requestAnimationFrame(() => {
+      pendingBottomCorrectionRef.current = requestAnimationFrame(() => {
+        pendingBottomCorrectionRef.current = null;
+        const container = containerRef.current;
+        if (!container) return;
+        const maxTop = Math.max(0, container.scrollHeight - container.clientHeight);
+        if (Math.abs(container.scrollTop - maxTop) > 10) {
+          runWithInstantScroll(container, () => {
+            container.scrollTop = maxTop;
+          });
+          setShowJumpToLatest(false);
+          setShowJumpToTop(maxTop > TOP_JUMP_THRESHOLD);
+        }
+      });
+    });
   };
 
   useLayoutEffect(() => {
@@ -277,6 +303,7 @@ export function useTimelineScroll({
       return;
     }
     scrollToBottom('auto');
+    scheduleBottomCorrection();
   }, [conversationId, isActiveWorld, isWorldSettled]);
 
   useLayoutEffect(() => {
@@ -388,6 +415,13 @@ export function useTimelineScroll({
     setFollowMode('manual');
     updateJumpButtons(container);
   };
+
+  useEffect(() => () => {
+    if (pendingBottomCorrectionRef.current !== null) {
+      cancelAnimationFrame(pendingBottomCorrectionRef.current);
+      pendingBottomCorrectionRef.current = null;
+    }
+  }, []);
 
   return {
     containerRef,

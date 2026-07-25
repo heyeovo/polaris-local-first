@@ -22,6 +22,7 @@ import { MessageGeneratedImages } from './MessageGeneratedImages';
 import { MessageToolEvent } from './MessageToolEvent';
 import { isProjectedCodeToolName } from './projectedCodeTools';
 import { buildAssistantSpeechText } from './messageSpeechText';
+import { formatMessageTime } from './messageTime';
 import {
   buildVisibleToolProductCardMessageIds,
   nextToolProductCardActivationBlockedUntil,
@@ -64,6 +65,7 @@ export type MessageRowActions = {
   saveToolPreview: (message: ChatMessage) => void;
   rollbackToolPreview: (message: ChatMessage) => void;
   openToolbox: () => void;
+  openToolResult: (message: ChatMessage) => void;
   openCodeCard: (cardId: string) => void;
   runCodeCard: (card: CodeCard) => void;
   setCommandStatus: (text: string, isError?: boolean) => void;
@@ -473,6 +475,7 @@ function MessageRowComponent({
                         onSaveToolPreview={actions.saveToolPreview}
                         onRollbackToolPreview={actions.rollbackToolPreview}
                         onOpenToolbox={actions.openToolbox}
+                        onOpenToolResult={actions.openToolResult}
                         onInteractionBoundary={markToolReceiptInteraction}
                       />
                       {renderToolProductCard(toolMessage)}
@@ -489,6 +492,7 @@ function MessageRowComponent({
           <div className="message-turn-body user">
             <div className="message-turn-stack user">
               {messageBubble}
+              <div className="message-timestamp">{formatMessageTime(message.timestamp)}</div>
               {messageActions}
             </div>
             {showChatAvatars ? (

@@ -6,7 +6,7 @@ import type { ChatMessage, ConversationTaskState } from '../../types/domain';
 import { buildRegexTriggerContext } from '../regexTriggerProcessor';
 import { buildCapabilityEntries } from './requestPromptCapabilities';
 import { buildIdentityEntries } from './requestPromptIdentity';
-import { buildModelRuntimeEntry, buildWorkRuntimeEntry } from './requestPromptRuntime';
+import { buildModelRuntimeEntry } from './requestPromptRuntime';
 import { buildSystemIdentityEntries } from './requestPromptSystemIdentity';
 import type { AssistantToolPromptProtocolMode } from '../tool-protocol/assistantToolProtocolPrompt';
 
@@ -55,7 +55,6 @@ export function buildAssistantPromptParts(params: {
     enabled: false,
     charCount: 0
   };
-  const workRuntimeEntry = buildWorkRuntimeEntry({ currentTask, messages, toolContext });
   const capabilityEntries = buildCapabilityEntries({ messages, toolContext, toolProtocolMode });
 
   return [
@@ -63,8 +62,7 @@ export function buildAssistantPromptParts(params: {
     ...identityEntries,
     ...capabilityEntries,
     ...(modelRuntimeEntry ? [modelRuntimeEntry] : []),
-    regexTriggerEntry,
-    ...(workRuntimeEntry ? [workRuntimeEntry] : [])
+    regexTriggerEntry
   ].map((part) => ({
     ...part,
     enabled: Boolean(part.content),

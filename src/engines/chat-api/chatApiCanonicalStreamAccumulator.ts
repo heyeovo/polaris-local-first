@@ -54,6 +54,9 @@ export function applyProviderRuntimeStreamEvents(
       return;
     }
     if (event.type === 'reasoning.delta') {
+      if (target.thinkingStartedAt === undefined) {
+        target.thinkingStartedAt = Date.now();
+      }
       target.thinkingText += event.text;
       changed = true;
       return;

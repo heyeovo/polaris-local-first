@@ -1,4 +1,5 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
+import { isPolarisEmbed } from '../../app/bootstrap/appLayoutSurfaceBootstrap';
 import { buildConversationCardSummary } from '../../app/collection/conversationCardSummary';
 import { resolveCollectionRenderItemCount } from '../../app/shell/collectionRenderLoad';
 import { deriveAppShellState } from '../../app/shell/deriveAppShellState';
@@ -143,6 +144,8 @@ export function useAppShellController() {
   );
 
   const collection = useCollectionShellState();
+  const [windowSettingsOpen, setWindowSettingsOpen] = useState(false);
+  const [handoffConfirmOpen, setHandoffConfirmOpen] = useState(false);
   const themeSession = useThemeSessionActions();
   const chatRuntimePort: AppTriggerChatRuntimePort = useMemo(() => ({
     generationByConversationId: chatUi.generationByConversationId,
@@ -337,6 +340,46 @@ export function useAppShellController() {
       state: {
         ...world.topbarProps.state,
         menuOpen: overlays.modals.menuOpen
+      },
+      actions: {
+        ...world.topbarProps.actions,
+        onToggleWorld: () => {
+          if (isPolarisEmbed()) {
+            // 嵌入模式：星标始终跳转到对话列表页
+            if (activeWorld !== 'collection') {
+              setWorld('collection');
+            }
+            if (collectionShelf !== 'dialogue') {
+              setCollectionShelf('dialogue');
+            }
+            collection.setCollaboratorSwitchOpen(false);
+            collection.setSearchOpen(false);
+          } else {
+            world.topbarProps.actions.onToggleWorld();
+          }
+        },
+        onToggleCollaboratorSwitch: () => {
+          if (isPolarisEmbed() && activeWorld !== 'collection') {
+            setWorld('collection');
+          }
+          collection.setSearchOpen(false);
+          collection.setCollaboratorSwitchOpen((prev) => !prev);
+        },
+        onOpenEmbedConfig: () => {
+          if (isPolarisEmbed() && activeWorld !== 'collection') {
+            setWorld('collection');
+          }
+          if (collectionShelf === 'info') {
+            setCollectionShelf('dialogue');
+          } else {
+            setCollectionShelf('info');
+          }
+          collection.setCollaboratorSwitchOpen(false);
+          collection.setSearchOpen(false);
+        },
+        onOpenWindowSettings: () => {
+          setWindowSettingsOpen((prev) => !prev);
+        },
       }
     },
     chatRuntimePort,
@@ -356,6 +399,10 @@ export function useAppShellController() {
       onDismiss: dismissReplyNotification
     },
     overlaysProps: overlays.overlaysProps,
+    windowSettingsOpen,
+    setWindowSettingsOpen,
+    handoffConfirmOpen,
+    setHandoffConfirmOpen,
     screenshotDebugContext: {
       activeConversationTitle,
       activeConversationMessageCount,

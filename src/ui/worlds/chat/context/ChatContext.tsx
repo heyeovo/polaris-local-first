@@ -51,6 +51,8 @@ export type ChatContextUiValue = {
   latestRetryableAssistantId: string | null;
   activePreviewMessage: ChatMessage | null;
   thinkingSummaryMessageId: string | null;
+  toolResultMessageId: string | null;
+  setToolResultMessageId: (id: string | null) => void;
   codeCardActionModeByMessageId: Record<string, CodeCardActionMode>;
   codeCardProgressByMessageId: Record<string, CodeCardMessageProgress>;
 };
@@ -96,6 +98,7 @@ export type ChatContextActionsValue = {
   reviveTheme: () => void;
   restoreDefaultTheme: () => void;
   openToolbox: () => void;
+  openToolResult: (message: ChatMessage) => void;
   createConversation: () => void;
   openConversation: (conversationId: string) => void;
   acceptWorkspaceProposal: () => Promise<void>;

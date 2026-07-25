@@ -6,6 +6,7 @@ import {
 } from '../../infrastructure/runCodeSandboxMode';
 import type { ActiveThemePreview } from '../../stores/spaceStore';
 import type { CollectionShelf, World } from '../../types/domain';
+import { isPolarisEmbed } from '../../app/bootstrap/appLayoutSurfaceBootstrap';
 import { Icon } from '../Icon';
 import { runSelectionAction } from '../haptics';
 import { WorldAnchor } from './WorldAnchor';
@@ -38,6 +39,8 @@ export type AppTopbarActions = {
   onToggleMenu: () => void;
   onOpenSettings: () => void;
   onOpenPreviewChat: () => void;
+  onOpenEmbedConfig?: () => void;
+  onOpenWindowSettings?: () => void;
 };
 
 export type AppTopbarProps = {
@@ -114,7 +117,8 @@ export function AppTopbar({
   const collectionSearchTitle = collectionCardsEditable ? t('common.editOrSearch') : t('common.search');
   const collectionSearchLabel = collectionSearchTitle;
   const collectionSearchIcon = collectionCardsEditable ? 'editList' : 'search';
-  const showCollaboratorGate = state.activeWorld === 'collection';
+  const isEmbed = isPolarisEmbed();
+  const showCollaboratorGate = isEmbed || state.activeWorld === 'collection';
 
   if (!state.showShell) {
     return null;
@@ -155,7 +159,7 @@ export function AppTopbar({
           ) : null}
 
           <div className="topbar-actions">
-            {canOpenCollectionInfoSettings && (
+            {!isEmbed && canOpenCollectionInfoSettings && (
               <button
                 type="button"
                 className={`action-btn icon-btn topbar-settings-btn ${state.menuOpen ? 'active' : ''}`}
@@ -167,7 +171,7 @@ export function AppTopbar({
               </button>
             )}
 
-            {state.activeWorld === 'chat' && (
+            {state.activeWorld === 'chat' && !isEmbed && (
               <button
                 type="button"
                 className="action-btn icon-btn topbar-new-chat-btn"
@@ -182,6 +186,32 @@ export function AppTopbar({
             {canOpenCollectionSearch && (
               <button type="button" className={`action-btn icon-btn ${state.searchOpen ? 'active' : ''}`} title={collectionSearchTitle} aria-label={collectionSearchLabel} onClick={(event) => handleSelectionAction(actions.onToggleSearch, event.currentTarget)}>
                 <Icon name={collectionSearchIcon} size={19} />
+              </button>
+            )}
+
+            {isEmbed && actions.onOpenEmbedConfig && state.collectionShelf !== 'info' && state.activeWorld !== 'chat' && (
+              <button
+                type="button"
+                className="action-btn icon-btn"
+                title={t('common.settings')}
+                aria-label={t('common.settings')}
+                onClick={(event) => handleSelectionAction(actions.onOpenEmbedConfig!, event.currentTarget)}
+              >
+                <Icon name="settings" size={18} />
+              </button>
+            )}
+
+            {isEmbed && state.activeWorld === 'chat' && (
+              <button
+                type="button"
+                className="action-btn icon-btn"
+                title={t('topbar.windowSettings')}
+                aria-label={t('topbar.windowSettings')}
+                onClick={() => {
+                  actions.onOpenWindowSettings?.();
+                }}
+              >
+                <Icon name="layers" size={18} />
               </button>
             )}
           </div>

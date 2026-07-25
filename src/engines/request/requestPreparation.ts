@@ -7,6 +7,7 @@ import {
   type ImageUnderstandingRequestReply
 } from '../imageUnderstandingClient';
 import { MEMORY_RELEASE_GATES } from '../../config/memoryReleaseGates';
+import { getCrossChatRecallCandidates, setCrossChatRecallCandidates } from './crossChatRecallCache';
 import { createUid } from '../id';
 import { buildRequestContextPlan } from './requestContextPlan';
 import type { AssistantRequestAudit } from './requestAudit';
@@ -670,9 +671,13 @@ export async function prepareCollaboratorReplyRequest(params: {
     maxTokens: budgetPlan.buckets.memory.maxTokens
   });
   const memoryPlanMs = runtimeNow() - stepStartedAt;
-  const semanticRecallEnabled =
+  const isNewWindowFirstTurn = !requestSourceMessages.some(m => m.role === 'assistant');
+  const activeConvId = params.activeConversationId;
+  const cachedCandidates = isNewWindowFirstTurn ? undefined : getCrossChatRecallCandidates(activeConvId);
+
+  const semanticRecallEnabled = isNewWindowFirstTurn && (
     params.semanticRecallEnabled !== false
-    && persona?.memory.crossConversationRecallEnabled !== false;
+    && persona?.memory.crossConversationRecallEnabled !== false);
   const semanticRecallConfig = resolveSemanticRecallConfig(persona?.memory.semanticRecall);
   const semanticVectorCandidates = semanticRecallEnabled && MEMORY_RELEASE_GATES.enableVectorRequestRecall && params.semanticRecallConversations
     ? await resolveVectorCandidatesForRequest({
@@ -720,6 +725,15 @@ export async function prepareCollaboratorReplyRequest(params: {
     plan: semanticRecallPlan,
     conversations: semanticRecallConversations
   });
+
+  // Cache first-turn recall candidates so they persist across the window
+  if (isNewWindowFirstTurn && activeConvId && semanticRecallCandidates.length > 0) {
+    setCrossChatRecallCandidates(activeConvId, semanticRecallCandidates);
+  }
+
+  // Use cached candidates for subsequent turns (stable content → cache hit)
+  const finalRecallCandidates = cachedCandidates ?? semanticRecallCandidates;
+
   const historyMaxTokens = resolveRequestHistoryBudget({
     plan: budgetPlan,
     promptParts: selectedPromptParts,
@@ -772,7 +786,7 @@ export async function prepareCollaboratorReplyRequest(params: {
     toolLedger,
     memoryLines: memoryPlan.selectedLines,
     conversationSummaries: conversationSummaryPlan.selectedSummaries,
-    semanticRecallCandidates,
+    semanticRecallCandidates: finalRecallCandidates,
     memoryReferenceDocs: canReadMemoryDocs ? persona?.memory.referenceDocs ?? [] : [],
     workspaceReferenceDocs: canReadWorkspaceReferenceDocs
       ? toolContext?.visibleWorkspaceReferenceDocs?.filter((doc) =>
